@@ -1,4 +1,6 @@
+import allure
 import pytest
+from allure_commons.types import AttachmentType
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
@@ -8,8 +10,25 @@ from webdriver_manager.chrome import ChromeDriverManager
 from Utilities import ReadConfigurations
 
 
+@pytest.fixture
+def log_on_failure(request):
+    yield
+    item = request.node
+    if item.rep_call.failed:
+        allure.attach(driver.get_screenshot_as_png(), name="invalid_product", attachment_type=AttachmentType.PNG)
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item):
+    outcome = yield
+    rep = outcome.get_result()
+    setattr(item, "rep_" + rep.when, rep)
+    return rep
+
+
 @pytest.fixture(scope="class")
 def setup(request):
+    global driver
     driver = None
     browser = ReadConfigurations.read_configuration("basic info", "browser")
     if browser.__eq__("firefox"):
